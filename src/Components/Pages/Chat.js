@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { db } from "../../services/firebase";
 import { auth } from "../../services/firebase";
-
+import { FormControl, Select, InputLabel, MenuItem } from "@material-ui/core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane, faSearch } from "@fortawesome/free-solid-svg-icons";
 
@@ -13,6 +13,7 @@ class Chat extends Component {
     this.state = {
       user: auth().currentUser,
       chats: [],
+      boards: [],
       users: new Map(),
       content: "",
       readError: null,
@@ -52,13 +53,28 @@ class Chat extends Component {
 
         this.setState({ users });
       });
+      const taskboards = db.ref("taskboards");
+      taskboards.on("value", (snapshot) => {
+        const boards = [];
+        snapshot.forEach((board) => {
+          const boardVal = board.val();
+          console.log("board is ", boardVal);
+          boards.push({
+            id: board.key,
+            ...boardVal,
+          });
+        });
+        this.setState({ boards });
+        // setColumns(tmpCols);
+        // setReadError(false);
+      });
     } catch (error) {
       this.setState({ readError: error.message });
     }
   }
   async componentWillUnmount() {
-      db.ref("users").off('value');
-      db.ref("chats").off('value');
+    db.ref("users").off("value");
+    db.ref("chats").off("value");
   }
 
   handleChange(event) {
@@ -90,6 +106,10 @@ class Chat extends Component {
       d.getMonth() + 1
     }/${d.getFullYear()} ${d.getHours()}:${d.getMinutes()}`;
     return time;
+  }
+
+  handleSelectBoard(e) {
+    console.log("e val", e.target.value);
   }
 
   render() {
@@ -174,6 +194,23 @@ class Chat extends Component {
                   {/* Logged in as:{" "}
                   <strong className="text-info">{this.state.user.email}</strong> */}
                   <strong className="text-info">Group 1</strong>
+                  <FormControl>
+                    <InputLabel id="demo-simple-select-label">Age</InputLabel>
+                    <Select
+                      labelId="demo-simple-select-label"
+                      id="demo-simple-select"
+                      value={10}
+                      onChange={this.handleSelectBoard}
+                    >
+                      {this.state.boards.map((board) => {
+                        return (
+                          <MenuItem key={board.id} value={board.id}>
+                            {board.name}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
                 </div>
                 <div className="msg-mid">
                   {this.state.chats.map((chat) => {

@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { db } from "../../services/firebase";
+import { createTaskboard, createTaskColumn } from "../../helpers/db";
 import { auth } from "../../services/firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -83,6 +84,16 @@ class Chat extends Component {
       content: event.target.value,
     });
   }
+
+  handleCreateTaskboard = async () => {
+    try {
+      const taskboardResult = await createTaskboard();
+      console.log("result is ", taskboardResult);
+      console.log("key", taskboardResult.key);
+    } catch (err) {
+      console.error(`An error occurred when creating a new taskboard`, err);
+    }
+  };
 
   async handleSubmit(event) {
     event.preventDefault();
@@ -192,6 +203,11 @@ class Chat extends Component {
                   <strong className="text-info">{this.state.user.email}</strong> */}
                   <div className="group_header">
                     <strong className="text-info">Group 1</strong>
+                  </div>
+                  <div className="create_subgroup_btn">
+                    <button type="button" onClick={this.handleCreateTaskboard}>
+                      <FontAwesomeIcon icon={faPlus} />{" "}
+                    </button>
                   </div>
                   <div className="create_subgroup_btn">
                     <button type="button">

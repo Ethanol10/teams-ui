@@ -38,11 +38,31 @@ const exampleTasks = [
 ];
 
 const Taskboard = () => {
+  const [taskboardData, setTaskboardData] = React.useState({});
+  const [isBoardLoaded, setIsBoardLoaded] = React.useState(false);
   const [columns, setColumns] = React.useState([]);
   const [readError, setReadError] = React.useState(false); // TODO: use this
+
+  useEffect(() => {
+    const getTaskboardData = async () => {
+      try {
+        const boardId = "-M7NtED0DivurUuCPk7Q"; // TODO: get from path param
+        console.log("just before");
+        const result = await db.ref(`/taskboards/${boardId}`).once("value");
+        console.log("result is ", result.val());
+        setTaskboardData(result.val());
+      } catch (err) {
+        console.log("An error occurred when getting taskboard data", err);
+        setTaskboardData({});
+      }
+      setIsBoardLoaded(true);
+    };
+    getTaskboardData();
+  }, []);
+
   useEffect(() => {
     try {
-      const columns = db.ref("columns");
+      const columns = db.ref(`columns/${taskboardData.columnsKey}`);
       columns.on("value", (snapshot) => {
         const tmpCols = [];
         snapshot.forEach((col) => {
@@ -60,10 +80,11 @@ const Taskboard = () => {
       setReadError(true);
       alert(`An error occurred when reading data... ${err.message}`); // TODO: Dont use an alert, do this properly...
     }
-    return () => db.ref("columns").off("value");
-  }, []);
+    return () => db.ref(`columns/${taskboardData.columnsKey}`).off("value");
+  }, [taskboardData]);
 
   console.log("Readerror is ", readError); // Just keeping this here until we look at using readError
+  // TODO: Handle empty taskboard data, display board doesnt exist etc...
   return (
     <div id="taskboard-container">
       <div className="taskboard-navbar">
@@ -72,9 +93,16 @@ const Taskboard = () => {
       <div className="taskboard-canvas">
         <div className="taskboard">
           {columns.map((column) => {
-            return <TaskColumn column={column} tasks={exampleTasks} />;
+            return (
+              <TaskColumn
+                columnsKey={taskboardData.columnsKey}
+                key={column.id}
+                column={column}
+                tasks={exampleTasks}
+              />
+            );
           })}
-          <NewTaskColumn />
+          <NewTaskColumn columnsKey={taskboardData.columnsKey} />
         </div>
       </div>
     </div>

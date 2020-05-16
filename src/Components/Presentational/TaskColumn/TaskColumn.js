@@ -5,10 +5,10 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { deleteTaskColumn } from "../../../helpers/db";
 
-const TaskColumn = ({ columnsKey, column, tasks }) => {
+const TaskColumn = ({ boardId, column, tasks }) => {
   const handleDeleteColumn = async () => {
     try {
-      await deleteTaskColumn(columnsKey, column.id);
+      await deleteTaskColumn(boardId, column.id);
     } catch (err) {
       alert(`An error occurred when deleting column ${err.message}`); // TODO: Dont use alerts for error messages..
     }

@@ -18,14 +18,12 @@ export function writeChats(message) {
   });
 }
 
-export async function createTaskboard() {
-  const columnsKey = await db.ref("columns").push();
+export async function createTaskboard(userId) {
   return db.ref("taskboards").push({
     name: "New Taskboard",
     description: "This is a new taskboard",
-    createdBy: "userid1",
+    createdBy: userId,
     createdTimestamp: Date.now(),
-    columnsKey: columnsKey.key,
   });
 }
 
@@ -35,16 +33,15 @@ export async function createTaskboard() {
  * @param {string} columnsKey - The unique key that all columns are created under
  * @param {string} name - The name of the column
  */
-// TODO: This will also need to push into groups.<group-id>.taskboards when that exists
-export function createTaskColumn(columnsKey, name) {
-  return db.ref(`columns/${columnsKey}`).push({
+export function createTaskColumn(boardId, name) {
+  return db.ref(`columns/${boardId}`).push({
     name,
     createdTimestamp: Date.now(),
   });
 }
 
-export function deleteTaskColumn(columnsKey, id) {
-  return db.ref(`columns/${columnsKey}/${id}`).update({
+export function deleteTaskColumn(boardId, id) {
+  return db.ref(`columns/${boardId}/${id}`).update({
     deletedTimestamp: Date.now(),
   });
 }

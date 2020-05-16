@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { db } from "../../services/firebase";
-import { createTaskboard, createTaskColumn } from "../../helpers/db";
+import { createTaskboard } from "../../helpers/db";
 import { auth } from "../../services/firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -87,9 +87,7 @@ class Chat extends Component {
 
   handleCreateTaskboard = async () => {
     try {
-      const taskboardResult = await createTaskboard();
-      console.log("result is ", taskboardResult);
-      console.log("key", taskboardResult.key);
+      await createTaskboard(this.state.user.uid);
     } catch (err) {
       console.error(`An error occurred when creating a new taskboard`, err);
     }

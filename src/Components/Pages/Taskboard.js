@@ -3,24 +3,7 @@ import "./Taskboard.scss";
 import TaskColumn from "../Presentational/TaskColumn/TaskColumn";
 import NewTaskColumn from "../Presentational/NewTaskColumn/NewTaskColumn";
 import { db } from "../../services/firebase";
-
-/*
-taskboard:
-  Name: string
-  Description: string
-  createdDate: Date
-  createdBy: string // userId
-  Columns: string[]
-  deletedDate: Date | null
-column:
-  Name: string
-  Tasks: string[]
-tasks:
-  name: string
-  description: string
-  createdDate: Date
-  assignees: string[] // User IDs
-*/
+import { readUrlQueryParam } from "../../helpers/utils";
 
 // These are just example tasks, we should be reading these from the database...
 const exampleTasks = [
@@ -44,13 +27,14 @@ const Taskboard = () => {
   const [readError, setReadError] = React.useState(false); // TODO: use this
 
   useEffect(() => {
+    const boardId = readUrlQueryParam("id");
     const getTaskboardData = async () => {
       try {
-        const boardId = "-M7NtED0DivurUuCPk7Q"; // TODO: get from path param
-        console.log("just before");
         const result = await db.ref(`/taskboards/${boardId}`).once("value");
-        console.log("result is ", result.val());
-        setTaskboardData(result.val());
+        setTaskboardData({
+          id: result.key,
+          ...result.val(),
+        });
       } catch (err) {
         console.log("An error occurred when getting taskboard data", err);
         setTaskboardData({});
@@ -61,8 +45,9 @@ const Taskboard = () => {
   }, []);
 
   useEffect(() => {
+    if (!Object.keys(taskboardData).length) return;
     try {
-      const columns = db.ref(`columns/${taskboardData.columnsKey}`);
+      const columns = db.ref(`columns/${taskboardData.id}`);
       columns.on("value", (snapshot) => {
         const tmpCols = [];
         snapshot.forEach((col) => {
@@ -80,7 +65,7 @@ const Taskboard = () => {
       setReadError(true);
       alert(`An error occurred when reading data... ${err.message}`); // TODO: Dont use an alert, do this properly...
     }
-    return () => db.ref(`columns/${taskboardData.columnsKey}`).off("value");
+    return () => db.ref(`columns/${taskboardData.id}`).off("value");
   }, [taskboardData]);
 
   console.log("Readerror is ", readError); // Just keeping this here until we look at using readError
@@ -91,19 +76,27 @@ const Taskboard = () => {
         <p>Board Title Here</p>
       </div>
       <div className="taskboard-canvas">
-        <div className="taskboard">
-          {columns.map((column) => {
-            return (
-              <TaskColumn
-                columnsKey={taskboardData.columnsKey}
-                key={column.id}
-                column={column}
-                tasks={exampleTasks}
-              />
-            );
-          })}
-          <NewTaskColumn columnsKey={taskboardData.columnsKey} />
-        </div>
+        {isBoardLoaded ? (
+          <div className="taskboard">
+            {columns.map((column) => {
+              return (
+                <TaskColumn
+                  boardId={taskboardData.id}
+                  key={column.id}
+                  column={column}
+                  tasks={exampleTasks}
+                />
+              );
+            })}
+            <NewTaskColumn boardId={taskboardData.id} />
+          </div>
+        ) : (
+          <div className="loading-lockup">
+            <div className="spinner-border text-success" role="status">
+              <span className="sr-only">Loading...</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

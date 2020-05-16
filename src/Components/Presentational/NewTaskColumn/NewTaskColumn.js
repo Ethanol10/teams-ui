@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Typography } from "@material-ui/core";
 import { createTaskColumn } from "../../../helpers/db";
 
-const NewTaskColumn = ({ columnsKey }) => {
+const NewTaskColumn = ({ boardId }) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [name, setName] = React.useState("");
 
@@ -25,7 +25,7 @@ const NewTaskColumn = ({ columnsKey }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createTaskColumn(columnsKey, name);
+      await createTaskColumn(boardId, name);
       handleCancelEditing();
     } catch (err) {
       alert(`An error occurred when creating a new column ${err.message}`);

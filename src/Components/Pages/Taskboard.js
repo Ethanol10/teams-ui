@@ -1,9 +1,11 @@
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import "./Taskboard.scss";
 import TaskColumn from "../Presentational/TaskColumn/TaskColumn";
 import NewTaskColumn from "../Presentational/NewTaskColumn/NewTaskColumn";
 import { db } from "../../services/firebase";
-import { readUrlQueryParam } from "../../helpers/utils";
+import { readUrlQueryParam, isEmptyObj } from "../../helpers/utils";
+import { Typography } from "@material-ui/core";
 
 // These are just example tasks, we should be reading these from the database...
 const exampleTasks = [
@@ -31,6 +33,9 @@ const Taskboard = () => {
     const getTaskboardData = async () => {
       try {
         const result = await db.ref(`/taskboards/${boardId}`).once("value");
+        if (!result.val()) {
+          throw new Error("Taskboard does not exist");
+        }
         setTaskboardData({
           id: result.key,
           ...result.val(),
@@ -45,7 +50,7 @@ const Taskboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!Object.keys(taskboardData).length) return;
+    if (isEmptyObj(taskboardData)) return;
     try {
       const columns = db.ref(`columns/${taskboardData.id}`);
       columns.on("value", (snapshot) => {
@@ -63,13 +68,20 @@ const Taskboard = () => {
       });
     } catch (err) {
       setReadError(true);
-      alert(`An error occurred when reading data... ${err.message}`); // TODO: Dont use an alert, do this properly...
+      console.error(`An error occurred when reading data... ${err.message}`); // TODO: Dont use an alert, do this properly...
     }
     return () => db.ref(`columns/${taskboardData.id}`).off("value");
   }, [taskboardData]);
 
   console.log("Readerror is ", readError); // Just keeping this here until we look at using readError
-  // TODO: Handle empty taskboard data, display board doesnt exist etc...
+  if (isBoardLoaded && isEmptyObj(taskboardData)) {
+    return (
+      <div className="taskboard-error-lockup">
+        <Typography variant="h5">Taskboard does not exist</Typography>
+        <Link to="chat">Go back to Home Page</Link>
+      </div>
+    );
+  }
   return (
     <div id="taskboard-container">
       <div className="taskboard-navbar">

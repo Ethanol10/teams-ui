@@ -1,8 +1,18 @@
 import React, { Component } from "react";
 import "./Profile.scss";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { TextInput } from "react-native";
 
 import { db } from "../../services/firebase";
 import { auth } from "../../services/firebase";
+import { faTimes } from "@fortawesome/free-solid-svg-icons/faTimes";
+
+class TextField extends Component {
+  render() {
+    var text = this.props.text || "";
+    return <div>{text}</div>;
+  }
+}
 
 class Profile extends Component {
   constructor(props) {
@@ -13,12 +23,146 @@ class Profile extends Component {
       username: null,
       readError: null,
       writeError: null,
+      usernameEditable: false,
+      emailEditable: false,
+      passwordEditable: false,
+      error: null,
     };
-    //this.handleChange = this.handleChange.bind(this);
-    //this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleUsernameChange = this.handleUsernameChange.bind(this);
+    this.handleUsernameCancel = this.handleUsernameCancel.bind(this);
+    this.handleEmailChange = this.handleEmailChange.bind(this);
+    this.handleEmailCancel = this.handleEmailCancel.bind(this);
+    this.handlePasswordChange = this.handlePasswordChange.bind(this);
+    this.handlePasswordCancel = this.handlePasswordCancel.bind(this);
+
+    this.handleChange = this.handleChange.bind(this);
   }
 
-  componentDidMount() {
+  writeUserData(userId, name, email) {
+    db.ref("users/" + userId)
+      .set({
+        email: email,
+        name: name,
+      })
+      .then(function () {
+        console.log("Data successfully written to db");
+      });
+    this.refreshUserDetails();
+  }
+
+  //Username Callback
+  handleUsernameCancel(e) {
+    e.preventDefault();
+    this.setState({
+      usernameTemp: "",
+      usernameEditable: !this.state.usernameEditable,
+    });
+  }
+  handleUsernameChange(e) {
+    e.preventDefault();
+    if (this.state.usernameEditable) {
+      if (
+        typeof this.state.usernameTemp !== "undefined" &&
+        this.state.emailTemp !== ""
+      ) {
+        this.writeUserData(
+          this.state.user.uid,
+          this.state.usernameTemp,
+          this.state.email
+        );
+        this.setState({ usernameTemp: "" });
+      }
+    }
+    this.setState({
+      usernameEditable: !this.state.usernameEditable,
+    });
+  }
+
+  //Email Callback
+  handleEmailCancel(e) {
+    e.preventDefault();
+    this.setState({
+      emailTemp: "",
+      emailEditable: !this.state.emailEditable,
+    });
+  }
+  handleEmailChange(e) {
+    e.preventDefault();
+    if (this.state.emailEditable) {
+      if (
+        typeof this.state.emailTemp !== "undefined" &&
+        this.state.emailTemp !== ""
+      ) {
+        var self = this;
+        var emailTemporary = this.state.emailTemp;
+        this.state.user
+          .updateEmail(this.state.emailTemp)
+          .then(function () {
+            self.writeUserData(
+              self.state.user.uid,
+              self.state.username,
+              emailTemporary
+            );
+            console.log("Email changed successfully");
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+
+        this.setState({ emailTemp: "" });
+      }
+    }
+    this.setState({
+      emailEditable: !this.state.emailEditable,
+    });
+  }
+
+  handleProfileChange(e) {
+    e.preventDefault();
+    console.log("The profile was clicked.");
+  }
+
+  //Password Callback
+  handlePasswordCancel(e) {
+    e.preventDefault();
+    this.setState({
+      passwordEditable: !this.state.passwordEditable,
+    });
+  }
+  handlePasswordChange(e) {
+    e.preventDefault();
+    var errorMes;
+    if (this.state.passwordEditable) {
+      if (
+        typeof this.state.passwordTemp !== "undefined" &&
+        this.state.passwordTemp !== ""
+      ) {
+        this.state.user
+          .updatePassword(this.state.passwordTemp)
+          .then(function () {
+            console.log("Password update success");
+          })
+          .catch(function (error) {
+            errorMes = error;
+            console.log(error);
+          });
+      }
+    }
+    this.setState({
+      error: errorMes,
+      passwordTemp: "",
+      passwordEditable: !this.state.passwordEditable,
+    });
+  }
+
+  //Store the value in a temp variable when textInput changes
+  handleChange(evt, name) {
+    const { text } = evt.nativeEvent;
+    this.setState(() => ({ [name]: text }));
+  }
+
+  //Refreshes the user details by pulling new data from the database
+  refreshUserDetails() {
     this.setState({ readError: null });
 
     try {
@@ -33,11 +177,96 @@ class Profile extends Component {
     }
   }
 
+  componentDidMount() {
+    this.refreshUserDetails();
+  }
+
   render() {
+    var usernameTextRender,
+      emailTextRender,
+      passwordTextRender,
+      crossRender,
+      errorText;
+
+    crossRender = <FontAwesomeIcon icon={faTimes} aria-hidden="true" />;
+    errorText = <TextField text={this.state.error} />;
+    //username
+    if (this.state.usernameEditable) {
+      usernameTextRender = (
+        <div>
+          <TextInput
+            style={{
+              fontSize: 16,
+              height: 35,
+              borderColor: "gray",
+              borderWidth: 1,
+            }}
+            defaultValue={this.state.username}
+            onChange={(event) => this.handleChange(event, "usernameTemp")}
+          />
+        </div>
+      );
+    } else {
+      usernameTextRender = (
+        <div>
+          <TextField text={this.state.username} />
+        </div>
+      );
+    }
+
+    //Email
+    if (this.state.emailEditable) {
+      emailTextRender = (
+        <div>
+          <TextInput
+            style={{
+              fontSize: 16,
+              height: 35,
+              borderColor: "gray",
+              borderWidth: 1,
+            }}
+            defaultValue={this.state.email}
+            onChange={(event) => this.handleChange(event, "emailTemp")}
+          />
+        </div>
+      );
+    } else {
+      emailTextRender = (
+        <div>
+          <TextField text={this.state.email} />
+        </div>
+      );
+    }
+
+    //Password
+    if (this.state.passwordEditable) {
+      passwordTextRender = (
+        <div>
+          <TextInput
+            style={{
+              fontSize: 16,
+              height: 35,
+              borderColor: "gray",
+              borderWidth: 1,
+            }}
+            onChange={(event) => this.handleChange(event, "passwordTemp")}
+          />
+        </div>
+      );
+    } else {
+      passwordTextRender = (
+        <div>
+          <TextField text="************" />
+        </div>
+      );
+    }
+
     return (
       <div id="profile">
         <div className="content-wrap">
-          <div className="name-icon">D</div>
+          <div className="name-icon">
+            {this.state.username != null ? this.state.username.charAt(0) : ""}
+          </div>
           <h1>
             Welcome,{" "}
             {this.state.username != null
@@ -52,8 +281,10 @@ class Profile extends Component {
               <div className="content">
                 <h4>Add a photo to personalise your account</h4>
               </div>
-              <div className="icon">
-                D
+              <div className="icon" onClick={this.handleProfileChange}>
+                {this.state.username != null
+                  ? this.state.username.charAt(0)
+                  : ""}
                 <div className="photo">
                   <svg
                     data-v-d223ba98=""
@@ -79,18 +310,21 @@ class Profile extends Component {
             </div>
             <div className="info">
               <h3>EMAIL</h3>
-              <div className="content">{this.state.email}</div>
-              <div className="popup">
+              <div className="content">{emailTextRender}</div>
+              <div onClick={this.handleEmailCancel}>
+                <b>{this.state.emailEditable ? crossRender : ""}</b>
+              </div>
+              <div className="popup" onClick={this.handleEmailChange}>
                 <svg
                   data-v-d223ba98=""
                   aria-hidden="true"
                   focusable="false"
                   data-prefix="fas"
-                  data-icon="pen"
+                  data-icon="close"
                   role="img"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 512 512"
-                  className="svg-inline--fa fa-pen fa-w-16"
+                  className="svg-inline--fa fa-close fa-w-16"
                 >
                   <path
                     data-v-d223ba98=""
@@ -103,12 +337,11 @@ class Profile extends Component {
             </div>
             <div className="info">
               <h3>USERNAME</h3>
-              <div className="content">
-                {this.state.username != null
-                  ? this.state.username
-                  : this.state.email}
+              <div className="content">{usernameTextRender}</div>
+              <div onClick={this.handleUsernameCancel}>
+                <b>{this.state.usernameEditable ? crossRender : ""}</b>
               </div>
-              <div className="popup">
+              <div className="popup" onClick={this.handleUsernameChange}>
                 <svg
                   data-v-d223ba98=""
                   aria-hidden="true"
@@ -132,9 +365,12 @@ class Profile extends Component {
             <div className="info" style={{ borderBottom: "none" }}>
               <h3>PASSWORD</h3>
               <div className="content" type="password">
-                ************
+                {passwordTextRender}
               </div>
-              <div className="popup">
+              <div onClick={this.handlePasswordCancel}>
+                <b>{this.state.passwordEditable ? crossRender : ""}</b>
+              </div>
+              <div className="popup" onClick={this.handlePasswordChange}>
                 <svg
                   style={{ width: "20px", fontSize: "20px", height: "20px" }}
                   data-v-d223ba98=""
@@ -156,6 +392,7 @@ class Profile extends Component {
                 </svg>
               </div>
             </div>
+            <div>{errorText}</div>
           </div>
         </div>
       </div>
